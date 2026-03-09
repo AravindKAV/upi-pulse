@@ -13,12 +13,12 @@ import javax.inject.Singleton
 class RegexUpiParser @Inject constructor() : TransactionPayloadParser {
 
     private val debitRegex = Regex(
-        pattern = "(?i)(?:rs\.?|inr)\\s*([0-9,.]+).*?(?:paid to|debited(?: to)?|spent at)\\s*([A-Za-z0-9 .@_-]+).*?(?:utr|ref(?:erence)? no\.?)\\s*([A-Za-z0-9]+)",
+        pattern = "(?i)(?:rs\\.?|inr)\\s*([0-9,.]+).*?(?:paid to|debited(?: to)?|spent at)\\s*([A-Za-z0-9 .@_-]+).*?(?:utr|ref(?:erence)? no\\.?)\\s*([A-Za-z0-9]+)",
         option = RegexOption.MULTILINE
     )
 
     private val creditRegex = Regex(
-        pattern = "(?i)(?:rs\.?|inr)\\s*([0-9,.]+).*?(?:received from|credited(?: from)?|cashback from)\\s*([A-Za-z0-9 .@_-]+).*?(?:utr|ref(?:erence)? no\.?)\\s*([A-Za-z0-9]+)",
+        pattern = "(?i)(?:rs\\.?|inr)\\s*([0-9,.]+).*?(?:received from|credited(?: from)?|cashback from)\\s*([A-Za-z0-9 .@_-]+).*?(?:utr|ref(?:erence)? no\\.?)\\s*([A-Za-z0-9]+)",
         option = RegexOption.MULTILINE
     )
 
