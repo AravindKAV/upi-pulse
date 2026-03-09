@@ -1,0 +1,16 @@
+# Gradle
+.gradle/
+build/
+
+# Local configuration
+local.properties
+
+# Android build folders
+*/build/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db

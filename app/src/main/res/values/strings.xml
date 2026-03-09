@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">UPI Pulse</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="timeline_title">Timeline</string>
+    <string name="merchant_title">Merchant</string>
+    <string name="settings_title">Settings</string>
+</resources>
