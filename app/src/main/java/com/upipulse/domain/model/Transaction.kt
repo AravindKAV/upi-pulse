@@ -26,5 +26,6 @@ data class Merchant(
 
 enum class TransactionSource {
     SMS,
-    NOTIFICATION
+    NOTIFICATION,
+    MANUAL
 }

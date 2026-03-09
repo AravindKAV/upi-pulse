@@ -1,6 +1,8 @@
 package com.upipulse.ui.screens.timeline
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,19 +10,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -39,25 +49,68 @@ fun TimelineScreen(
     viewModel: TimelineViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
-    when (val uiState = state) {
-        TimelineUiState.Loading -> Loading()
-        is TimelineUiState.Error -> Error(uiState.message)
-        is TimelineUiState.Ready -> TimelineContent(uiState.transactions, modifier)
+    val context = LocalContext.current
+    var showDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                TimelineEvent.TransactionSaved -> {
+                    showDialog = false
+                    Toast.makeText(context, "Transaction saved", Toast.LENGTH_SHORT).show()
+                }
+                is TimelineEvent.Error -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    Box(modifier = modifier.fillMaxSize()) {
+        when (val uiState = state) {
+            TimelineUiState.Loading -> Loading()
+            is TimelineUiState.Error -> Error(uiState.message)
+            is TimelineUiState.Ready -> TimelineContent(
+                transactions = uiState.transactions,
+                modifier = Modifier.fillMaxSize(),
+                onAddManual = { showDialog = true }
+            )
+        }
+        FloatingActionButton(
+            onClick = { showDialog = true },
+            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add transaction")
+        }
+    }
+
+    if (showDialog) {
+        ManualTransactionDialog(
+            onDismiss = { showDialog = false },
+            onSave = { input -> viewModel.addManualTransaction(input) }
+        )
     }
 }
 
 @Composable
-private fun TimelineContent(transactions: List<Transaction>, modifier: Modifier) {
+private fun TimelineContent(
+    transactions: List<Transaction>,
+    modifier: Modifier,
+    onAddManual: () -> Unit
+) {
     val filter = remember { mutableStateOf(TimelineFilter.ALL) }
     val filtered = transactions.filter { filter.value.allows(it.direction) }
     val hasRealData = filtered.isNotEmpty()
     val listToRender = if (hasRealData) filtered else sampleTransactions()
     LazyColumn(
-        modifier = modifier.fillMaxSize().padding(16.dp),
+        modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
-            TimelineHeader(transactionsCount = transactions.size, filter = filter.value, onFilterChange = { filter.value = it })
+            TimelineHeader(
+                transactionsCount = transactions.size,
+                filter = filter.value,
+                onFilterChange = { filter.value = it },
+                onAddManual = onAddManual
+            )
         }
         if (!hasRealData) {
             item {
@@ -83,10 +136,26 @@ private fun TimelineContent(transactions: List<Transaction>, modifier: Modifier)
 }
 
 @Composable
-private fun TimelineHeader(transactionsCount: Int, filter: TimelineFilter, onFilterChange: (TimelineFilter) -> Unit) {
+private fun TimelineHeader(
+    transactionsCount: Int,
+    filter: TimelineFilter,
+    onFilterChange: (TimelineFilter) -> Unit,
+    onAddManual: () -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Text("Timeline", style = MaterialTheme.typography.titleLarge)
-        Text("$transactionsCount transactions tracked", style = MaterialTheme.typography.bodyMedium)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("Timeline", style = MaterialTheme.typography.titleLarge)
+                Text("$transactionsCount transactions tracked", style = MaterialTheme.typography.bodyMedium)
+            }
+            Button(onClick = onAddManual) {
+                Text("Add manually")
+            }
+        }
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
