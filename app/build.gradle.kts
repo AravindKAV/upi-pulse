@@ -41,7 +41,6 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
-        freeCompilerArgs += "-XsuppressKotlinVersionCompatibilityCheck"
     }
 
     buildFeatures {
@@ -60,20 +59,17 @@ android {
 }
 
 dependencies {
-    // Compose BOM ensures consistent versions
     val composeBom = platform("androidx.compose:compose-bom:2024.04.01")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    // AndroidX core
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
     implementation("androidx.activity:activity-compose:1.8.2")
 
-    // Compose UI (KeyboardOptions comes from ui-text)
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-text")
+    // Compose UI
+    implementation("androidx.compose.ui:ui") // KeyboardOptions comes from here
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")

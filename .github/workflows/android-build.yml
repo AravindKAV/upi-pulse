@@ -21,9 +21,9 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      # Force a clean build and disable Gradle cache
+      # Clean and refresh dependencies to fix cached Compose/Kotlin issues
       - name: Build Debug APK
-        run: ./gradlew clean assembleDebug --no-build-cache
+        run: ./gradlew clean assembleDebug --refresh-dependencies --no-build-cache
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
