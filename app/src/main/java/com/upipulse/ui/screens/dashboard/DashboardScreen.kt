@@ -11,11 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Insights
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.NotificationsActive
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -27,17 +22,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.upipulse.ui.common.openAppDetails
+import com.upipulse.domain.model.CategorySpend
+import com.upipulse.domain.model.DashboardSummary
+import com.upipulse.domain.model.Merchant
+import com.upipulse.domain.model.MerchantSpend
 import com.upipulse.ui.components.CategorySpendList
 import com.upipulse.ui.components.MetricCard
 import com.upipulse.ui.components.MerchantSpendList
 import com.upipulse.ui.components.SpendDonutChart
 import com.upipulse.ui.components.formatInr
-import com.upipulse.ui.components.formatInrLabel
 
 @Composable
 fun DashboardScreen(
@@ -45,7 +40,6 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
     when (val state = uiState) {
         DashboardUiState.Loading -> LoadingState(modifier)
         is DashboardUiState.Error -> ErrorState(message = state.message, modifier = modifier)
@@ -53,25 +47,22 @@ fun DashboardScreen(
             val hasData = state.summary.totalInflow > 0 ||
                 state.summary.totalOutflow > 0 ||
                 state.summary.categoryBreakdown.isNotEmpty()
-            if (!hasData) {
-                DashboardEmptyState(onGrantPermissions = { openAppDetails(context) }, modifier = modifier)
-            } else {
-                DashboardContent(state, modifier)
-            }
+            val summary = if (hasData) state.summary else sampleSummary()
+            DashboardContent(summary = summary, modifier = modifier, showDemoBanner = !hasData)
         }
     }
 }
 
 @Composable
-private fun DashboardContent(state: DashboardUiState.Ready, modifier: Modifier) {
+private fun DashboardContent(summary: DashboardSummary, modifier: Modifier, showDemoBanner: Boolean) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            OverviewHero(state)
+            OverviewHero(summary, showDemoBanner)
         }
-        if (state.summary.categoryBreakdown.isNotEmpty()) {
+        if (summary.categoryBreakdown.isNotEmpty()) {
             item {
                 Text(
                     text = "Spending mix",
@@ -82,13 +73,13 @@ private fun DashboardContent(state: DashboardUiState.Ready, modifier: Modifier) 
             item {
                 Card(modifier = Modifier.padding(horizontal = 16.dp)) {
                     SpendDonutChart(
-                        breakdown = state.summary.categoryBreakdown,
+                        breakdown = summary.categoryBreakdown,
                         modifier = Modifier.fillMaxWidth().padding(16.dp)
                     )
                 }
             }
         }
-        if (state.summary.topMerchants.isNotEmpty()) {
+        if (summary.topMerchants.isNotEmpty()) {
             item {
                 Text(
                     text = "Top merchants",
@@ -98,12 +89,12 @@ private fun DashboardContent(state: DashboardUiState.Ready, modifier: Modifier) 
             }
             item {
                 MerchantSpendList(
-                    merchants = state.summary.topMerchants,
+                    merchants = summary.topMerchants,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
         }
-        if (state.summary.categoryBreakdown.isNotEmpty()) {
+        if (summary.categoryBreakdown.isNotEmpty()) {
             item {
                 Text(
                     text = "Categories",
@@ -113,7 +104,7 @@ private fun DashboardContent(state: DashboardUiState.Ready, modifier: Modifier) 
             }
             item {
                 CategorySpendList(
-                    categories = state.summary.categoryBreakdown,
+                    categories = summary.categoryBreakdown,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
@@ -123,7 +114,7 @@ private fun DashboardContent(state: DashboardUiState.Ready, modifier: Modifier) 
 }
 
 @Composable
-private fun OverviewHero(state: DashboardUiState.Ready) {
+private fun OverviewHero(summary: DashboardSummary, showDemoBanner: Boolean) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
         Box(
             modifier = Modifier
@@ -137,9 +128,21 @@ private fun OverviewHero(state: DashboardUiState.Ready) {
                 .padding(20.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (showDemoBanner) {
+                    Text(
+                        text = "Demo data",
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = MaterialTheme.typography.labelMedium
+                    )
+                    Text(
+                        text = "Real transactions will replace this once added.",
+                        color = Color.White.copy(alpha = 0.8f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
                 Text("This month", style = MaterialTheme.typography.labelLarge, color = Color.White.copy(alpha = 0.8f))
                 Text(
-                    text = formatInr(state.summary.totalOutflow),
+                    text = formatInr(summary.totalOutflow),
                     style = MaterialTheme.typography.displaySmall,
                     color = Color.White
                 )
@@ -149,8 +152,8 @@ private fun OverviewHero(state: DashboardUiState.Ready) {
                     color = Color.White.copy(alpha = 0.8f)
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    QuickMetricChip(label = "Avg ticket", value = formatInr(state.summary.avgTicketSize))
-                    QuickMetricChip(label = "Cashback", value = formatInr(state.summary.cashbackTotal))
+                    QuickMetricChip(label = "Avg ticket", value = formatInr(summary.avgTicketSize))
+                    QuickMetricChip(label = "Cashback", value = formatInr(summary.cashbackTotal))
                 }
             }
         }
@@ -160,12 +163,12 @@ private fun OverviewHero(state: DashboardUiState.Ready) {
         ) {
             MetricCard(
                 title = "Total Outflow",
-                value = formatInr(state.summary.totalOutflow),
+                value = formatInr(summary.totalOutflow),
                 modifier = Modifier.weight(1f)
             )
             MetricCard(
                 title = "Total Inflow",
-                value = formatInr(state.summary.totalInflow),
+                value = formatInr(summary.totalInflow),
                 modifier = Modifier.weight(1f)
             )
         }
@@ -181,29 +184,6 @@ private fun QuickMetricChip(label: String, value: String) {
     ) {
         Text(text = label, color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall)
         Text(text = value, color = Color.White, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Composable
-private fun DashboardEmptyState(onGrantPermissions: () -> Unit, modifier: Modifier) {
-    Column(
-        modifier = modifier.fillMaxSize().padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "No data yet",
-            style = MaterialTheme.typography.headlineSmall,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = "Grant SMS and notification access to start tracking UPI payments.",
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(vertical = 12.dp)
-        )
-        Button(onClick = onGrantPermissions) {
-            Text("Grant Permissions")
-        }
     }
 }
 
@@ -229,3 +209,21 @@ private fun ErrorState(message: String, modifier: Modifier) {
         Text(message, style = MaterialTheme.typography.bodySmall)
     }
 }
+
+private fun sampleSummary(): DashboardSummary = DashboardSummary(
+    totalOutflow = 12850.0,
+    totalInflow = 1650.0,
+    avgTicketSize = 540.0,
+    topMerchants = listOf(
+        MerchantSpend(Merchant(id = "swiggy", name = "Swiggy"), 3450.0, 6),
+        MerchantSpend(Merchant(id = "amazon", name = "Amazon"), 2800.0, 3),
+        MerchantSpend(Merchant(id = "ola", name = "Ola"), 980.0, 4)
+    ),
+    categoryBreakdown = listOf(
+        CategorySpend("Food", 4200.0, 5000.0),
+        CategorySpend("Shopping", 3600.0, 4000.0),
+        CategorySpend("Transport", 1800.0, 2500.0),
+        CategorySpend("Bills", 1600.0, 2000.0)
+    ),
+    cashbackTotal = 250.0
+)
