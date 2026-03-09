@@ -1,22 +1,8 @@
 package com.upipulse.ui.screens.timeline
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
@@ -67,18 +53,19 @@ fun ManualTransactionDialog(
             }
         },
         confirmButton = {
-            Button(onClick = {
-                onSave(
-                    ManualTransactionInput(
-                        merchant = merchant.ifBlank { "Manual" },
-                        amount = amountValue ?: 0.0,
-                        category = category,
-                        direction = direction
+            Button(
+                onClick = {
+                    onSave(
+                        ManualTransactionInput(
+                            merchant = merchant.ifBlank { "Manual" },
+                            amount = amountValue ?: 0.0,
+                            category = category,
+                            direction = direction
+                        )
                     )
-                )
-            }, enabled = saveEnabled) {
-                Text("Save")
-            }
+                },
+                enabled = saveEnabled
+            ) { Text("Save") }
         },
         dismissButton = {
             Button(onClick = onDismiss) { Text("Cancel") }
