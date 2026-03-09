@@ -17,7 +17,7 @@ import com.upipulse.data.local.entity.TransactionEntity
         BudgetEntity::class
     ],
     version = 1,
-    exportSchema = true
+    exportSchema = false // ← fixed warning
 )
 @TypeConverters(Converters::class)
 abstract class UpiPulseDatabase : RoomDatabase() {
