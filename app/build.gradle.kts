@@ -69,7 +69,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.8.2")
 
     // Compose UI
-    implementation("androidx.compose.ui:ui") // KeyboardOptions comes from here
+    implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -90,6 +90,9 @@ dependencies {
 
     // Datastore
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    // Biometric
+    implementation("androidx.biometric:biometric:1.1.0")
 
     // Material Design
     implementation("com.google.android.material:material:1.11.0")

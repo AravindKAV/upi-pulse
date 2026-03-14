@@ -31,7 +31,7 @@ import com.upipulse.util.formatInr
 fun WeeklySpendingBarChart(
     data: List<WeeklySpendingPoint>,
     modifier: Modifier = Modifier,
-    maxHeight: Dp = 160.dp
+    maxHeight: Dp = 180.dp
 ) {
     val maxValue = data.maxOfOrNull { it.amount }?.takeIf { it > 0 } ?: 1.0
     
@@ -53,7 +53,7 @@ fun WeeklySpendingBarChart(
                     if (point.amount > 0) {
                         Text(
                             text = if (point.amount >= 1000) "${(point.amount / 1000).toInt()}k" else point.amount.toInt().toString(),
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
                             color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.Bold
                         )
@@ -62,7 +62,8 @@ fun WeeklySpendingBarChart(
                     
                     Box(
                         modifier = Modifier
-                            .width(16.dp)
+                            .width(18.dp)
+                            .weight(1f, fill = false)
                             .fillMaxHeight(fraction.coerceAtLeast(0.05f))
                             .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
                             .background(

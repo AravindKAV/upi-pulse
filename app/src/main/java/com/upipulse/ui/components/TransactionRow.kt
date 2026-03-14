@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -49,6 +50,14 @@ fun TransactionRow(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null
 ) {
+    val (icon, color) = getCategoryInfo(transaction.category)
+    val cardGradient = Brush.horizontalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.surface,
+            color.copy(alpha = 0.05f)
+        )
+    )
+
     ElevatedCard(
         modifier = modifier
             .padding(vertical = 4.dp)
@@ -58,11 +67,12 @@ fun TransactionRow(
     ) {
         Row(
             modifier = Modifier
+                .background(cardGradient)
                 .fillMaxWidth()
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TransactionIcon(category = transaction.category)
+            TransactionIcon(icon = icon, color = color)
             
             Spacer(modifier = Modifier.width(16.dp))
             
@@ -85,7 +95,9 @@ fun TransactionRow(
                     Text(
                         text = transaction.account.name,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -107,16 +119,18 @@ fun TransactionRow(
     }
 }
 
-@Composable
-private fun TransactionIcon(category: String) {
-    val (icon, color) = when (category.lowercase()) {
+private fun getCategoryInfo(category: String): Pair<ImageVector, Color> {
+    return when (category.lowercase()) {
         "food", "dining" -> Icons.Default.Fastfood to Color(0xFFF59E0B)
         "shopping" -> Icons.Default.ShoppingBag to Color(0xFFEC4899)
         "bills", "utilities" -> Icons.Default.Receipt to Color(0xFF3B82F6)
         "transport" -> Icons.Default.CreditCard to Color(0xFF10B981)
         else -> Icons.Default.Category to Color(0xFF6366F1)
     }
+}
 
+@Composable
+private fun TransactionIcon(icon: ImageVector, color: Color) {
     Box(
         modifier = Modifier
             .size(44.dp)

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -20,9 +21,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowForwardIos
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -32,15 +30,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -59,14 +57,24 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    when (val uiState = state) {
-        DashboardUiState.Loading -> LoadingState(modifier)
-        is DashboardUiState.Ready -> DashboardContent(
-            analytics = uiState.analytics,
-            isDemo = uiState.isDemo,
-            onAddTransaction = onAddTransaction,
-            modifier = modifier
+    
+    val bgGradient = Brush.verticalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.15f),
+            MaterialTheme.colorScheme.surface
         )
+    )
+
+    Box(modifier = modifier.fillMaxSize().background(bgGradient)) {
+        when (val uiState = state) {
+            DashboardUiState.Loading -> LoadingState(Modifier)
+            is DashboardUiState.Ready -> DashboardContent(
+                analytics = uiState.analytics,
+                isDemo = uiState.isDemo,
+                onAddTransaction = onAddTransaction,
+                modifier = Modifier
+            )
+        }
     }
 }
 
@@ -89,9 +97,7 @@ private fun DashboardContent(
                 total = analytics.monthlyTotal,
                 isDemo = isDemo,
                 topCategory = topCategory?.category,
-                topCategoryAmount = topCategory?.total ?: 0.0,
                 peakDayLabel = peakDay?.day?.name,
-                peakDayAmount = peakDay?.amount ?: 0.0,
                 onAddTransaction = onAddTransaction
             )
         }
@@ -211,9 +217,7 @@ private fun DashboardHeroCard(
     total: Double,
     isDemo: Boolean,
     topCategory: String?,
-    topCategoryAmount: Double,
     peakDayLabel: String?,
-    peakDayAmount: Double,
     onAddTransaction: () -> Unit
 ) {
     val gradient = Brush.linearGradient(
@@ -357,19 +361,21 @@ private fun AccountInsightCard(spending: AccountSpending) {
             
             Column(
                 modifier = Modifier
-                    .padding(start = 16.dp)
+                    .padding(horizontal = 16.dp)
                     .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
                 Text(
                     spending.account.name, 
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
                 )
                 Text(
                     text = "Balance: ${formatInr(spending.balance)}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
             }
             
@@ -378,12 +384,14 @@ private fun AccountInsightCard(spending: AccountSpending) {
                     text = formatInr(spending.amount),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.End
                 )
                 Text(
                     text = "Spent",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End
                 )
             }
         }

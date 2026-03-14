@@ -1,6 +1,7 @@
 package com.upipulse.ui.screens.settings
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,17 +16,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SettingsSuggest
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -38,6 +44,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -51,14 +58,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.upipulse.domain.model.AppTheme
 import com.upipulse.util.formatInr
+import kotlin.math.absoluteValue
 
 @Composable
 fun SettingsScreen(
@@ -68,6 +80,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showAccountDialog by remember { mutableStateOf(false) }
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -86,6 +99,33 @@ fun SettingsScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.ExtraBold
             )
+        }
+
+        item {
+            SettingsSection(title = "Appearance") {
+                SettingItem(
+                    title = "App Theme",
+                    subtitle = when (state.settings.theme) {
+                        AppTheme.LIGHT -> "Light Mode"
+                        AppTheme.DARK -> "Dark Mode"
+                        AppTheme.SYSTEM -> "System Default"
+                    },
+                    icon = Icons.Default.Palette,
+                    onClick = { showThemeDialog = true }
+                )
+            }
+        }
+
+        item {
+            SettingsSection(title = "Security") {
+                SettingToggle(
+                    title = "App Lock",
+                    subtitle = "Require biometric or device lock to open app",
+                    icon = Icons.Default.Lock,
+                    checked = state.settings.lockEnabled,
+                    onCheckedChange = viewModel::toggleLock
+                )
+            }
         }
 
         item {
@@ -179,31 +219,51 @@ fun SettingsScreen(
         }
 
         item {
+            val privacyGradient = Brush.horizontalGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.primaryContainer,
+                    MaterialTheme.colorScheme.secondaryContainer
+                )
+            )
             ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f))
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
-                    Icon(
-                        imageVector = Icons.Default.Info, 
-                        contentDescription = null, 
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    Column {
-                        Text("Privacy First", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                        Text(
-                            "UPI Pulse keeps all computation on-device. Your financial data never leaves your phone. No banking credentials are ever requested.",
-                            style = MaterialTheme.typography.bodySmall,
-                            lineHeight = 18.sp
+                Box(modifier = Modifier.background(privacyGradient).padding(16.dp)) {
+                    Row(verticalAlignment = Alignment.Top) {
+                        Icon(
+                            imageVector = Icons.Default.Info, 
+                            contentDescription = null, 
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
                         )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text("Privacy First", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                            Text(
+                                "UPI Pulse keeps all computation on-device. Your financial data never leaves your phone. No banking credentials are ever requested.",
+                                style = MaterialTheme.typography.bodySmall,
+                                lineHeight = 18.sp,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+                            )
+                        }
                     }
                 }
             }
         }
         
         item { Spacer(modifier = Modifier.height(32.dp)) }
+    }
+
+    if (showThemeDialog) {
+        ThemeSelectionDialog(
+            currentTheme = state.settings.theme,
+            onThemeSelected = {
+                viewModel.updateTheme(it)
+                showThemeDialog = false
+            },
+            onDismiss = { showThemeDialog = false }
+        )
     }
 
     if (showAccountDialog) {
@@ -214,6 +274,80 @@ fun SettingsScreen(
                 showAccountDialog = false
             }
         )
+    }
+}
+
+@Composable
+private fun ThemeSelectionDialog(
+    currentTheme: AppTheme,
+    onThemeSelected: (AppTheme) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select Theme", fontWeight = FontWeight.Bold) },
+        shape = RoundedCornerShape(28.dp),
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Close") }
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ThemeOption(
+                    title = "System Default",
+                    icon = Icons.Default.SettingsSuggest,
+                    selected = currentTheme == AppTheme.SYSTEM,
+                    onClick = { onThemeSelected(AppTheme.SYSTEM) }
+                )
+                ThemeOption(
+                    title = "Light Mode",
+                    icon = Icons.Default.LightMode,
+                    selected = currentTheme == AppTheme.LIGHT,
+                    onClick = { onThemeSelected(AppTheme.LIGHT) }
+                )
+                ThemeOption(
+                    title = "Dark Mode",
+                    icon = Icons.Default.DarkMode,
+                    selected = currentTheme == AppTheme.DARK,
+                    onClick = { onThemeSelected(AppTheme.DARK) }
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun ThemeOption(
+    title: String,
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .selectable(
+                selected = selected,
+                onClick = onClick,
+                role = Role.RadioButton
+            )
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.weight(1f)
+        )
+        RadioButton(selected = selected, onClick = null)
     }
 }
 
@@ -234,6 +368,39 @@ private fun SettingsSection(title: String, content: @Composable ColumnScope.() -
             Column {
                 content()
             }
+        }
+    }
+}
+
+@Composable
+private fun SettingItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        }
+        
+        Spacer(modifier = Modifier.width(16.dp))
+        
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -277,6 +444,13 @@ private fun SettingToggle(
 
 @Composable
 private fun AccountRow(account: com.upipulse.domain.model.Account, onDelete: () -> Unit) {
+    val accent = accountAccentColor(account.id)
+    val accountGradient = Brush.horizontalGradient(
+        colors = listOf(
+            MaterialTheme.colorScheme.surface,
+            accent.copy(alpha = 0.1f)
+        )
+    )
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -284,38 +458,51 @@ private fun AccountRow(account: com.upipulse.domain.model.Account, onDelete: () 
     ) {
         Row(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
+                .background(accountGradient)
+                .padding(16.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(44.dp)
-                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f), CircleShape),
+                    .size(48.dp)
+                    .background(accent.copy(alpha = 0.15f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.AccountBalance, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                Icon(Icons.Default.AccountBalance, contentDescription = null, tint = accent)
             }
             
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(account.name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+            Column(
+                modifier = Modifier
+                    .padding(horizontal = 16.dp)
+                    .weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    account.name, 
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1
+                )
                 Text(
                     text = "${account.bankName}${account.numberSuffix?.let { " • ****$it" } ?: ""}", 
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Balance: ${formatInr(account.balance)}", 
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.SemiBold
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1
                 )
             }
             
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f))
+            Column(horizontalAlignment = Alignment.End) {
+                Text(
+                    text = formatInr(account.balance),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = accent,
+                    textAlign = TextAlign.End
+                )
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = "Remove", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f), modifier = Modifier.size(18.dp))
+                }
             }
         }
     }
@@ -392,3 +579,15 @@ private fun AccountDialog(
         }
     )
 }
+
+private val AccentPalette = listOf(
+    Color(0xFF6366F1), // Indigo
+    Color(0xFF0EA5E9), // Sky
+    Color(0xFF10B981), // Emerald
+    Color(0xFFF59E0B), // Amber
+    Color(0xFFEF4444)  // Red
+)
+
+private fun accountAccentColor(id: Long): Color =
+    if (AccentPalette.isEmpty()) Color(0xFF6366F1)
+    else AccentPalette[(id.toInt().absoluteValue) % AccentPalette.size]

@@ -3,6 +3,7 @@ package com.upipulse.ui.screens.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.upipulse.domain.model.Account
+import com.upipulse.domain.model.AppTheme
 import com.upipulse.domain.model.TrackingSettings
 import com.upipulse.domain.usecase.ObserveTrackingSettingsUseCase
 import com.upipulse.domain.usecase.ObserveAccountsUseCase
@@ -11,6 +12,8 @@ import com.upipulse.domain.usecase.UpsertAccountUseCase
 import com.upipulse.domain.usecase.DeleteAccountUseCase
 import com.upipulse.domain.usecase.UpdateNotificationDetectionUseCase
 import com.upipulse.domain.usecase.UpdateSmsDetectionUseCase
+import com.upipulse.domain.usecase.UpdateThemeUseCase
+import com.upipulse.data.preferences.UserPreferencesDataSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
@@ -39,7 +42,9 @@ class SettingsViewModel @Inject constructor(
     private val updateNotificationDetectionUseCase: UpdateNotificationDetectionUseCase,
     private val resetSampleDataUseCase: ResetSampleDataUseCase,
     private val upsertAccountUseCase: UpsertAccountUseCase,
-    private val deleteAccountUseCase: DeleteAccountUseCase
+    private val deleteAccountUseCase: DeleteAccountUseCase,
+    private val updateThemeUseCase: UpdateThemeUseCase,
+    private val preferences: UserPreferencesDataSource
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsUiState())
@@ -67,6 +72,16 @@ class SettingsViewModel @Inject constructor(
 
     fun toggleNotifications(enabled: Boolean) {
         viewModelScope.launch { updateNotificationDetectionUseCase(enabled) }
+    }
+
+    fun updateTheme(theme: AppTheme) {
+        viewModelScope.launch { updateThemeUseCase(theme) }
+    }
+
+    fun toggleLock(enabled: Boolean) {
+        viewModelScope.launch {
+            preferences.setLockEnabled(enabled)
+        }
     }
 
     fun resetSampleData() {

@@ -2,21 +2,23 @@ package com.upipulse.data.preferences
 
 import android.content.Context
 import androidx.datastore.core.DataStore
+import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.preferencesDataStoreFile
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStoreFile
+import com.upipulse.domain.model.AppTheme
 import com.upipulse.domain.model.TrackingSettings
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
-import java.io.IOException
 
 @Singleton
 class UserPreferencesDataSource @Inject constructor(
@@ -32,6 +34,8 @@ class UserPreferencesDataSource @Inject constructor(
         val NOTIFICATIONS = booleanPreferencesKey("notifications_enabled")
         val ONBOARDING = booleanPreferencesKey("onboarding_complete")
         val SAMPLE = booleanPreferencesKey("sample_seeded")
+        val THEME = stringPreferencesKey("app_theme")
+        val LOCK = booleanPreferencesKey("lock_enabled")
     }
 
     val settings: Flow<TrackingSettings> = dataStore.data
@@ -43,7 +47,13 @@ class UserPreferencesDataSource @Inject constructor(
                 smsDetectionEnabled = prefs[Keys.SMS] ?: true,
                 notificationDetectionEnabled = prefs[Keys.NOTIFICATIONS] ?: true,
                 onboardingComplete = prefs[Keys.ONBOARDING] ?: false,
-                sampleDataSeeded = prefs[Keys.SAMPLE] ?: false
+                sampleDataSeeded = prefs[Keys.SAMPLE] ?: false,
+                theme = try {
+                    AppTheme.valueOf(prefs[Keys.THEME] ?: AppTheme.SYSTEM.name)
+                } catch (e: Exception) {
+                    AppTheme.SYSTEM
+                },
+                lockEnabled = prefs[Keys.LOCK] ?: false
             )
         }
 
@@ -61,5 +71,13 @@ class UserPreferencesDataSource @Inject constructor(
 
     suspend fun setSampleSeeded(seed: Boolean) {
         dataStore.edit { prefs -> prefs[Keys.SAMPLE] = seed }
+    }
+
+    suspend fun setTheme(theme: AppTheme) {
+        dataStore.edit { prefs -> prefs[Keys.THEME] = theme.name }
+    }
+
+    suspend fun setLockEnabled(enabled: Boolean) {
+        dataStore.edit { prefs -> prefs[Keys.LOCK] = enabled }
     }
 }

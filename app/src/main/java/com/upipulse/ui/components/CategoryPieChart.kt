@@ -18,6 +18,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -29,12 +30,12 @@ import com.upipulse.domain.model.CategoryBreakdown
 import com.upipulse.util.formatInr
 
 private val ChartColors = listOf(
-    Color(0xFF6366F1), // Indigo
-    Color(0xFFEC4899), // Pink
-    Color(0xFFF59E0B), // Amber
-    Color(0xFF10B981), // Emerald
-    Color(0xFF3B82F6), // Blue
-    Color(0xFF8B5CF6)  // Violet
+    listOf(Color(0xFF6366F1), Color(0xFF818CF8)), // Indigo
+    listOf(Color(0xFFEC4899), Color(0xFFF472B6)), // Pink
+    listOf(Color(0xFFF59E0B), Color(0xFFFBBF24)), // Amber
+    listOf(Color(0xFF10B981), Color(0xFF34D399)), // Emerald
+    listOf(Color(0xFF3B82F6), Color(0xFF60A5FA)), // Blue
+    listOf(Color(0xFF8B5CF6), Color(0xFFA78BFA))  // Violet
 )
 
 @Composable
@@ -80,8 +81,12 @@ fun CategoryPieChart(
                 data.take(ChartColors.size).forEachIndexed { index, item ->
                     val sweep = ((item.total / total) * 360f).toFloat()
                     if (sweep > 0) {
+                        val gradientColors = ChartColors[index % ChartColors.size]
                         drawArc(
-                            color = ChartColors[index % ChartColors.size],
+                            brush = Brush.sweepGradient(
+                                colors = gradientColors,
+                                center = center
+                            ),
                             startAngle = startAngle,
                             sweepAngle = sweep,
                             useCenter = false,
@@ -121,7 +126,7 @@ fun CategoryPieChart(
                         val colorIndex = data.indexOf(item)
                         LegendItem(
                             item = item,
-                            color = ChartColors[colorIndex % ChartColors.size],
+                            color = ChartColors[colorIndex % ChartColors.size].first(),
                             modifier = Modifier.weight(1f)
                         )
                     }

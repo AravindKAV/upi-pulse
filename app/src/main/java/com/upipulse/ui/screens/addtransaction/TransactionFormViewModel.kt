@@ -72,9 +72,11 @@ class TransactionFormViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             observeCategoriesUseCase().collect { list ->
-                _categories.value = list.map { it.name }
-                if (_state.value.category.isEmpty() && list.isNotEmpty()) {
-                    _state.update { it.copy(category = list.first().name) }
+                // Fix: deduplicate categories if they are repeated
+                val distinctCategories = list.map { it.name }.distinct()
+                _categories.value = distinctCategories
+                if (_state.value.category.isEmpty() && distinctCategories.isNotEmpty()) {
+                    _state.update { it.copy(category = distinctCategories.first()) }
                 }
             }
         }

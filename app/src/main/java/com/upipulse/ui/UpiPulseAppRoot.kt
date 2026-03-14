@@ -1,10 +1,18 @@
 package com.upipulse.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
@@ -99,7 +107,11 @@ fun UpiPulseAppRoot() {
         NavHost(
             navController = appState.navController,
             startDestination = Destinations.SPLASH,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(padding),
+            enterTransition = { fadeIn() + slideInHorizontally { it / 2 } },
+            exitTransition = { fadeOut() + slideOutHorizontally { -it / 2 } },
+            popEnterTransition = { fadeIn() + slideInHorizontally { -it / 2 } },
+            popExitTransition = { fadeOut() + slideOutHorizontally { it / 2 } }
         ) {
             composable(Destinations.SPLASH) {
                 SplashScreen(onEvent = { event ->
@@ -135,7 +147,13 @@ fun UpiPulseAppRoot() {
             composable(Destinations.SETTINGS) {
                 SettingsScreen(onMessage = { message -> scope.launch { snackbarHostState.showSnackbar(message) } })
             }
-            composable(Destinations.ADD_TRANSACTION) {
+            composable(
+                route = Destinations.ADD_TRANSACTION,
+                enterTransition = { slideInVertically(initialOffsetY = { it }) + fadeIn() },
+                exitTransition = { slideOutVertically(targetOffsetY = { it }) + fadeOut() },
+                popEnterTransition = { fadeIn() },
+                popExitTransition = { slideOutVertically(targetOffsetY = { it }) + fadeOut() }
+            ) {
                 TransactionFormScreen(
                     onSaved = { message ->
                         scope.launch { snackbarHostState.showSnackbar(message) }
@@ -147,7 +165,11 @@ fun UpiPulseAppRoot() {
             }
             composable(
                 route = "${Destinations.EDIT_TRANSACTION}/{transactionId}",
-                arguments = listOf(navArgument("transactionId") { type = NavType.LongType })
+                arguments = listOf(navArgument("transactionId") { type = NavType.LongType }),
+                enterTransition = { slideInVertically(initialOffsetY = { it }) + fadeIn() },
+                exitTransition = { slideOutVertically(targetOffsetY = { it }) + fadeOut() },
+                popEnterTransition = { fadeIn() },
+                popExitTransition = { slideOutVertically(targetOffsetY = { it }) + fadeOut() }
             ) {
                 TransactionFormScreen(
                     onSaved = { message ->
