@@ -35,6 +35,14 @@ fun WeeklySpendingBarChart(
 ) {
     val maxValue = data.maxOfOrNull { it.amount }?.takeIf { it > 0 } ?: 1.0
     
+    // Darker gradient for the bars
+    val barGradient = Brush.verticalGradient(
+        colors = listOf(
+            Color(0xFF1E1B4B), // Indigo 950
+            Color(0xFF4338CA)  // Indigo 700
+        )
+    )
+
     Column(modifier = modifier) {
         Row(
             modifier = Modifier
@@ -54,8 +62,8 @@ fun WeeklySpendingBarChart(
                         Text(
                             text = if (point.amount >= 1000) "${(point.amount / 1000).toInt()}k" else point.amount.toInt().toString(),
                             style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Bold
+                            color = Color(0xFF1E1B4B), // Dark color for numbers
+                            fontWeight = FontWeight.Black
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                     }
@@ -66,14 +74,7 @@ fun WeeklySpendingBarChart(
                             .weight(1f, fill = false)
                             .fillMaxHeight(fraction.coerceAtLeast(0.05f))
                             .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
-                            .background(
-                                brush = Brush.verticalGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-                                    )
-                                )
-                            )
+                            .background(brush = barGradient)
                     )
                     
                     Spacer(modifier = Modifier.height(8.dp))
@@ -82,7 +83,7 @@ fun WeeklySpendingBarChart(
                         text = point.day.name.take(1),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = if (fraction >= 1f) FontWeight.Black else FontWeight.Medium,
-                        color = if (fraction >= 1f) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                        color = if (fraction >= 1f) Color(0xFF1E1B4B) else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
