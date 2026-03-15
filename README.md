@@ -5,10 +5,16 @@ UPI Pulse is a modern, offline-first Android expense tracker built with Jetpack 
 ## Feature highlights
 - **Guided onboarding** – Splash + onboarding flow explains core features and walks through SMS/notification permissions.
 - **Multi-account ledger** – Create bank accounts, tag every transaction, and monitor per-account totals alongside overall spend.
-- **Dashboard analytics** – Monthly total hero, account cards, category pie chart, weekly bar chart, and recent transactions list that react instantly to Room updates.
+- **Dashboard analytics** – Monthly total hero, account cards with unique gradients, category pie chart with sweep gradients, weekly bar chart, and recent transactions list.
+- **Credit & Debit Support** – Track both spending (Debits) and income (Credits). Automatically detects income from SMS/Notifications using smart keyword parsing.
+- **Money Transfers** – Move funds between your added bank accounts with a dedicated "Transfer" mode that handles double-entry automatically.
+- **App Lock Security** – Protect your sensitive financial data with Biometric (Fingerprint/Face) or Device PIN/Password authentication.
 - **Manual + automatic capture** – Add transactions with validation, or let the app parse UPI SMS/notifications (Google Pay, PhonePe, Paytm, BHIM, etc.).
+- **Expense History** – Dedicated History tab showing a beautiful month-by-month breakdown of your earnings vs. spending with full transaction records.
+- **Dark & Light Mode** – Full support for system themes with a custom Light/Dark/System preference toggle in Settings.
+- **Premium UI** – Modern "Glassmorphism" aesthetic with vibrant color gradients, decorative geometric overlays, and smooth navigation transitions.
 - **Transactions hub** – Full ledger with category and account filters, tap-to-edit, and swipe-to-delete gestures.
-- **Settings & sample data** – Toggle detectors, reset seeded demo data, manage bank accounts, and review privacy guidance.
+- **Settings & sample data** – Toggle detectors, reset seeded demo data, manage bank accounts, and customize app appearance.
 
 ## Architecture
 ```
@@ -18,57 +24,48 @@ SMS/Notifications -> Parser -> ExpenseRepository -> Room (TransactionDao/Account
                                     |
                           Compose ViewModels + UI
 ```
-- **Data layer**: Room entities (transactions, categories, accounts) with Flow-based DAO queries, plus DataStore preferences for detector toggles and onboarding state.
-- **Domain layer**: Use cases (`ObserveDashboardAnalytics`, `ObserveTransactions`, `UpsertTransaction`, `ObserveAccounts`, etc.) hide repository details from the UI.
-- **Presentation layer**: Jetpack Compose + Navigation + Hilt ViewModels drive Splash, Onboarding, Dashboard, Transactions, Add/Edit Transaction, and Settings screens.
+- **Data layer**: Room entities (transactions, categories, accounts) with Flow-based DAO queries, plus DataStore preferences for detector toggles, theme settings, and lock state.
+- **Domain layer**: Use cases (`ObserveDashboardAnalytics`, `ObserveTransactions`, `UpsertTransaction`, `ObserveAccounts`, `UpdateTheme`, etc.) hide repository details from the UI.
+- **Presentation layer**: Jetpack Compose + Navigation + Hilt ViewModels drive Splash, Onboarding, Dashboard, Transactions, History, and Settings screens.
 - **Services**: BroadcastReceiver for SMS and NotificationListenerService for supported UPI apps feed the parser and repository.
 
 ## Getting started
 1. **Prereqs** – Android Studio Iguana (or newer) with JDK 17 and Android SDK 26–34.
 2. **Sync & build** – `./gradlew :app:assembleDebug` (or press *Sync Project* in Android Studio).
 3. **Install** – `adb install app/build/outputs/apk/debug/app-debug.apk` or simply hit *Run*.
-4. **First launch** – Splash seeds sample accounts + categories, then onboarding walks through feature education and permission prompts. The dashboard renders rich demo analytics (powered by `SampleDataSource`) until you add your first real transaction.
+4. **First launch** – Splash seeds sample accounts + categories, then onboarding walks through feature education and permission prompts. 
 5. **Grant permissions** – Approve SMS + POST_NOTIFICATIONS when prompted, then open the notification-listener settings screen to allow "UPI Pulse".
+6. **Populate Data** – Use the **Reset Sample Data** option in Settings to quickly preview the Dashboard and History features with rich dummy data.
 
 ## Dashboard analytics
-- **Monthly hero** – Material card surfaces the month-to-date spend and gives you a one-tap "Add transaction" shortcut.
-- **Account insights** – Each bank card shows how much you spent this month and the live balance (starting amount minus all linked expenses).
-- **Category + weekly charts** – Compose pie + bar charts react instantly whenever Room emits updates.
-- **Demo preview** – When the ledger is empty we stream curated sample analytics so charts are populated on day one; the moment you add a real transaction the demo data disappears automatically.
+- **Monthly hero** – High-contrast gradient card surfaces the month-to-date spend.
+- **Account insights** – Each bank card uses a dynamic horizontal gradient matching the account's color and shows spent/earned totals and live balance.
+- **Category + weekly charts** – Custom Compose pie + bar charts with vibrant gradients that react instantly to Room updates.
+- **Universal Add Button** – A central, floating "Add" button at the bottom of the screen for quick manual entry from any tab.
 
 ## Manual transaction entry
-1. Tap the floating action button on the Dashboard (or the **Add transaction** CTA) to open the form.
-2. Select the bank account to charge, punch in amount + merchant, and pick a category/payment method/date/notes.
-3. Validation requires amount > 0, merchant text, and both dropdowns selected. Missing info triggers inline errors/snackbars.
-4. Hit **Save transaction** to insert into Room with `source = manual`; a snackbar confirms success and dashboard widgets refresh immediately.
-
-## Bank accounts
-- Add/edit/remove accounts from **Settings -> Bank accounts**. Each entry stores a nickname, bank name, and optional last four digits.
-- Dashboard shows a "By account" section so you can compare spend per bank alongside the overall total.
-- SMS/notification detections default to your first account, but you can reassign transactions later via the Transactions screen.
+1. Tap the central floating action button on the bottom bar to open the form.
+2. Choose between **Debit**, **Credit**, or **Transfer** modes.
+3. Select the accounts involved, enter amount + merchant, and pick from context-aware categories (e.g., Salary/Cashback for Credits, Travel/Dining for Debits).
+4. For **Transfers**, simply select the source and destination bank accounts to move funds.
+5. Hit **Save Entry** to update Room; dashboard and history widgets refresh immediately.
 
 ## Automatic parsing
 ### SMS detection
 - `SmsTransactionReceiver` listens to `Telephony.Sms.Intents.SMS_RECEIVED`.
-- Incoming bodies flow through `UpiDetectionParser`, which extracts amount, merchant, category, and payment method.
-- Parsed transactions auto-tagged to your default account and inserted with `source = SMS`.
+- Incoming bodies flow through `UpiDetectionParser`, which intelligently detects amounts, merchants, and transaction types (Credit vs Debit).
+- Parsed transactions land in the ledger with `source = SMS`.
 
 ### Notification listener
 - `UpiNotificationListenerService` watches Google Pay, PhonePe, Paytm, BHIM, Amazon Pay, etc.
 - Notifications reuse the same parser and land in the ledger with `source = NOTIFICATION`.
 
-Detection switches live in the Settings screen (DataStore-backed) and the receivers honor those toggles at runtime.
-
-## Permissions
-| Permission | Why it is needed |
-| --- | --- |
-| `RECEIVE_SMS`, `READ_SMS` | Capture bank/UPI payment alerts when providers use SMS fallback. |
-| `BIND_NOTIFICATION_LISTENER_SERVICE`, `POST_NOTIFICATIONS` | Listen to UPI app push notifications and surface confirmations/snackbars. |
-
-UPI Pulse never initiates payments and never sends financial data off-device. For Play Store submission, document the SMS/notification rationale and reference the in-app education screens.
+## Security & Privacy
+- **App Lock**: Optional Biometric/PIN lock can be enabled in Settings to secure the app launch.
+- **Privacy First**: All computation and data storage happen strictly on-device. UPI Pulse never requests banking credentials or sends your data off-device.
 
 ## Screenshots
-Add your screenshots under `docs/screenshots/` and link them here:
-- Dashboard – `docs/screenshots/dashboard.png`
-- Transactions – `docs/screenshots/transactions.png`
-- Onboarding – `docs/screenshots/onboarding.png`
+- Dashboard – Modern analytics with glassmorphism effects.
+- History – Comprehensive monthly financial timeline.
+- Transactions – Filterable record ledger with swipe gestures.
+- Settings – Full customization for themes, security, and account management.

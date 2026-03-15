@@ -9,7 +9,6 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -39,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -85,7 +83,6 @@ fun UpiPulseAppRoot() {
                             .clip(RoundedCornerShape(24.dp))
                     ) {
                         val items = BottomDestination.values()
-                        // Ensure we have exactly 4 items for the split layout
                         val leftItems = items.take(2)
                         val rightItems = items.takeLast(2)
 
@@ -93,7 +90,7 @@ fun UpiPulseAppRoot() {
                             NavigationItem(appState, destination)
                         }
 
-                        // Spacer to make room for the central FAB
+                        // Space for the FAB
                         Spacer(modifier = Modifier.weight(0.6f))
 
                         rightItems.forEach { destination ->
@@ -101,17 +98,15 @@ fun UpiPulseAppRoot() {
                         }
                     }
 
-                    // Centered Floating Action Button
-                    val fabGradient = Brush.linearGradient(listOf(Color(0xFF6366F1), Color(0xFFA855F7)))
+                    // Centered Floating Action Button - Universal
                     FloatingActionButton(
                         onClick = { appState.navController.navigate(Destinations.ADD_TRANSACTION) },
                         shape = CircleShape,
-                        containerColor = Color.Transparent,
-                        contentColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = Modifier
                             .offset(y = (-32).dp)
                             .size(60.dp)
-                            .background(fabGradient, CircleShape)
                             .shadow(8.dp, CircleShape)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = "Add", modifier = Modifier.size(32.dp))
@@ -123,11 +118,7 @@ fun UpiPulseAppRoot() {
         NavHost(
             navController = appState.navController,
             startDestination = Destinations.SPLASH,
-            modifier = Modifier.padding(padding),
-            enterTransition = { fadeIn() + slideInHorizontally { it / 2 } },
-            exitTransition = { fadeOut() + slideOutHorizontally { -it / 2 } },
-            popEnterTransition = { fadeIn() + slideInHorizontally { -it / 2 } },
-            popExitTransition = { fadeOut() + slideOutHorizontally { it / 2 } }
+            modifier = Modifier.padding(padding)
         ) {
             composable(Destinations.SPLASH) {
                 SplashScreen(onEvent = { event ->
@@ -153,7 +144,6 @@ fun UpiPulseAppRoot() {
             }
             composable(Destinations.TRANSACTIONS) {
                 TransactionsScreen(
-                    onAddTransaction = { appState.navController.navigate(Destinations.ADD_TRANSACTION) },
                     onEditTransaction = { id ->
                         appState.navController.navigate("${Destinations.EDIT_TRANSACTION}/$id")
                     },

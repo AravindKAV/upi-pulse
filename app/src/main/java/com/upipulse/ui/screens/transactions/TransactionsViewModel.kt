@@ -51,7 +51,8 @@ class TransactionsViewModel @Inject constructor(
                 observeCategoriesUseCase()
             ) { transactions, categories ->
                 val sorted = transactions.sortedByDescending { it.date }
-                val categoryNames = listOf("All") + categories.map { it.name }
+                // Use distinct() to prevent duplicate categories in the filter list
+                val categoryNames = (listOf("All") + categories.map { it.name }).distinct()
                 val currentFilter = _uiState.value.selectedCategory
                 val filtered = filterTransactions(sorted, currentFilter)
                 _uiState.value.copy(

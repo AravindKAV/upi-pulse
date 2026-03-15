@@ -148,7 +148,7 @@ private fun DashboardContent(
                             ) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Default.Analytics, contentDescription = null, tint = Color.White)
-                                    Spacer(modifier = Modifier.width(12.dp))
+                                         Spacer(modifier = Modifier.width(12.dp))
                                     Text(
                                         "Category Distribution", 
                                         style = MaterialTheme.typography.titleLarge,
