@@ -84,11 +84,11 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun resetSampleData() {
+    fun resetData() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isResetting = true)
             runCatching { resetSampleDataUseCase() }
-                .onSuccess { eventsChannel.send(SettingsEvent.Message("Sample data reloaded")) }
+                .onSuccess { eventsChannel.send(SettingsEvent.Message("All data cleared successfully")) }
                 .onFailure { eventsChannel.send(SettingsEvent.Message(it.message.orEmpty())) }
             _state.value = _state.value.copy(isResetting = false)
         }

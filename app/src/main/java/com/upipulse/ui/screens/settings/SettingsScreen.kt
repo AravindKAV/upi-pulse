@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
@@ -39,7 +40,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,6 +65,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -81,6 +82,7 @@ fun SettingsScreen(
     val state by viewModel.state.collectAsState()
     var showAccountDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showResetDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -201,18 +203,18 @@ fun SettingsScreen(
                         Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(modifier = Modifier.width(12.dp))
                         Column {
-                            Text("Sample Data", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                            Text("Reset demo entries to preview the app features.", style = MaterialTheme.typography.bodySmall)
+                            Text("Reset All Data", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                            Text("Clear all transactions and bank accounts.", style = MaterialTheme.typography.bodySmall)
                         }
                     }
                     Button(
-                        onClick = viewModel::resetSampleData, 
+                        onClick = { showResetDialog = true }, 
                         enabled = !state.isResetting,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = MaterialTheme.colorScheme.onSecondaryContainer)
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer)
                     ) {
-                        Text(if (state.isResetting) "Resetting..." else "Reset Sample Data")
+                        Text(if (state.isResetting) "Resetting..." else "Reset")
                     }
                 }
             }
@@ -241,7 +243,7 @@ fun SettingsScreen(
                         Column {
                             Text("Privacy First", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                             Text(
-                                "UPI Pulse keeps all computation on-device. Your financial data never leaves your phone. No banking credentials are ever requested.",
+                                "TrackIt keeps all computation on-device. Your financial data never leaves your phone. No banking credentials are ever requested.",
                                 style = MaterialTheme.typography.bodySmall,
                                 lineHeight = 18.sp,
                                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
@@ -253,6 +255,25 @@ fun SettingsScreen(
         }
         
         item { Spacer(modifier = Modifier.height(32.dp)) }
+    }
+
+    if (showResetDialog) {
+        AlertDialog(
+            onDismissRequest = { showResetDialog = false },
+            title = { Text("Reset All Data?") },
+            text = { Text("This will permanently delete all your transactions and bank accounts. Core categories will remain.") },
+            confirmButton = {
+                TextButton(onClick = { 
+                    viewModel.resetData()
+                    showResetDialog = false 
+                }) {
+                    Text("Confirm Reset", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showResetDialog = false }) { Text("Cancel") }
+            }
+        )
     }
 
     if (showThemeDialog) {

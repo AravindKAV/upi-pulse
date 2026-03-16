@@ -10,6 +10,7 @@ class UpiDetectionParser {
     
     private val amountRegex = Regex("""(?i)(?:rs\.?|inr|₹)\s*([0-9,.]+)""")
     private val merchantRegex = Regex("""(?i)(?:to|from|at)\s+([A-Za-z0-9 .@&_'-]+)""")
+    private val cardSuffixRegex = Regex("""(?i)(?:card no\.|a/c)\s*(?:xx|x+)?(\d{4})""")
     
     // Keywords indicating a credit (income)
     private val creditKeywords = listOf("credited", "received", "added to", "deposited")
@@ -39,8 +40,10 @@ class UpiDetectionParser {
             if (lowerBody.contains("to ")) amount = -amount
         }
 
-        val merchant = merchantRegex.find(body)?.groupValues?.getOrNull(1)?.trim()?.ifEmpty { null }
-            ?: guessMerchant(body)
+        // Try to extract card/account suffix to help repository match it
+        val cardSuffix = cardSuffixRegex.find(body)?.groupValues?.getOrNull(1)
+
+        val merchant = extractMerchant(body) ?: guessMerchant(body)
             
         val category = inferCategory(merchant)
         val paymentMethod = if (body.contains("upi", ignoreCase = true)) "UPI" else "System"
@@ -52,10 +55,16 @@ class UpiDetectionParser {
             category = category,
             paymentMethod = paymentMethod,
             date = timestamp,
-            notes = body.take(140),
+            notes = cardSuffix?.let { "Suffix:$it|$body" } ?: body.take(140),
             source = source,
             account = AccountSummary(id = -1, name = "Unassigned")
         )
+    }
+
+    private fun extractMerchant(body: String): String? {
+        // Find everything between the time/card info and "Avl limit" or "Not you?"
+        val merchantMatch = Regex("""(?i)\)\s+([A-Za-z0-9 .@&_'-]+?)\s+(?:Avl limit|Not you|at)""").find(body)
+        return merchantMatch?.groupValues?.getOrNull(1)?.trim()
     }
 
     private fun guessMerchant(body: String): String {
@@ -73,10 +82,10 @@ class UpiDetectionParser {
     private fun inferCategory(merchant: String): String {
         val normalized = merchant.lowercase(Locale.getDefault())
         return when {
-            normalized.contains("swiggy") || normalized.contains("zomato") || normalized.contains("restaurant") -> "Food"
+            normalized.contains("swiggy") || normalized.contains("zomato") || normalized.contains("restaurant") -> "Food & Dining"
             normalized.contains("uber") || normalized.contains("ola") || normalized.contains("metro") || normalized.contains("petrol") -> "Transport"
             normalized.contains("amazon") || normalized.contains("flipkart") || normalized.contains("myntra") -> "Shopping"
-            normalized.contains("electric") || normalized.contains("bill") || normalized.contains("recharge") || normalized.contains("jio") || normalized.contains("airtel") -> "Bills"
+            normalized.contains("electric") || normalized.contains("bill") || normalized.contains("recharge") || normalized.contains("jio") || normalized.contains("airtel") -> "Bills & Utilities"
             normalized.contains("netflix") || normalized.contains("hotstar") || normalized.contains("prime video") -> "Entertainment"
             normalized.contains("mart") || normalized.contains("fresh") || normalized.contains("bigbasket") || normalized.contains("grocer") -> "Groceries"
             else -> "Others"

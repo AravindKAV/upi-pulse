@@ -94,14 +94,18 @@ class ExpenseRepositoryImpl @Inject constructor(
 
     override suspend fun deleteAccount(account: Account) {
         withContext(ioDispatcher) {
-            val fallback = getDefaultAccountInternal(excludeId = account.id)
-            transactionDao.reassignAccount(account.id, fallback.id)
             accountDao.delete(account.toEntity())
         }
     }
 
     override suspend fun getDefaultAccount(): Account = withContext(ioDispatcher) {
-        getDefaultAccountInternal()
+        val existing = accountDao.first()
+        if (existing != null) {
+            return@withContext existing.toDomain()
+        }
+        // If no account exists, we should probably not auto-create a "Primary UPI" one anymore
+        // given the user's request for a clean start.
+        throw IllegalStateException("No accounts found. Please add one in Settings.")
     }
 
     override suspend fun insert(transaction: Transaction) {
@@ -150,22 +154,6 @@ class ExpenseRepositoryImpl @Inject constructor(
 
     override suspend fun clearTransactions() {
         withContext(ioDispatcher) { transactionDao.clearAll() }
-    }
-
-    private suspend fun getDefaultAccountInternal(excludeId: Long? = null): Account {
-        val existing = accountDao.first()
-        if (existing != null && existing.id != excludeId) {
-            return existing.toDomain()
-        }
-        val seed = Account(
-            name = "Primary UPI",
-            bankName = "UPI",
-            numberSuffix = null,
-            colorHex = 0xFF4C1D95,
-            balance = 0.0
-        )
-        val inserted = accountDao.upsert(seed.toEntity())
-        return seed.copy(id = inserted)
     }
 
     private fun buildDashboard(transactions: List<Transaction>, accounts: List<Account>): DashboardAnalytics {

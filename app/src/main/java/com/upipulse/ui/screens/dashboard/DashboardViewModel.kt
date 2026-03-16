@@ -2,7 +2,6 @@ package com.upipulse.ui.screens.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.upipulse.data.sample.SampleDataSource
 import com.upipulse.domain.model.DashboardAnalytics
 import com.upipulse.domain.usecase.ObserveDashboardAnalyticsUseCase
 import com.upipulse.domain.usecase.ObserveTransactionsUseCase
@@ -27,10 +26,8 @@ class DashboardViewModel @Inject constructor(
         observeDashboardAnalyticsUseCase(),
         observeTransactionsUseCase()
     ) { analytics, transactions ->
-        if (transactions.isEmpty()) {
-            DashboardUiState.Ready(SampleDataSource.sampleAnalytics(), true)
-        } else {
-            DashboardUiState.Ready(analytics, false)
-        }
+        // No longer streaming demo data if empty. 
+        // Dashboard will naturally show 0 values and empty lists from the 'analytics' object.
+        DashboardUiState.Ready(analytics, isDemo = false)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DashboardUiState.Loading)
 }
