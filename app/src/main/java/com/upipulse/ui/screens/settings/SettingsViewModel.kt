@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.upipulse.domain.model.Account
 import com.upipulse.domain.model.AppTheme
+import com.upipulse.domain.model.Category
 import com.upipulse.domain.model.TrackingSettings
 import com.upipulse.domain.usecase.ObserveTrackingSettingsUseCase
 import com.upipulse.domain.usecase.ObserveAccountsUseCase
@@ -13,6 +14,7 @@ import com.upipulse.domain.usecase.DeleteAccountUseCase
 import com.upipulse.domain.usecase.UpdateNotificationDetectionUseCase
 import com.upipulse.domain.usecase.UpdateSmsDetectionUseCase
 import com.upipulse.domain.usecase.UpdateThemeUseCase
+import com.upipulse.domain.usecase.UpsertCategoryUseCase
 import com.upipulse.data.preferences.UserPreferencesDataSource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -44,6 +46,7 @@ class SettingsViewModel @Inject constructor(
     private val upsertAccountUseCase: UpsertAccountUseCase,
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val updateThemeUseCase: UpdateThemeUseCase,
+    private val upsertCategoryUseCase: UpsertCategoryUseCase,
     private val preferences: UserPreferencesDataSource
 ) : ViewModel() {
 
@@ -91,6 +94,15 @@ class SettingsViewModel @Inject constructor(
                 .onSuccess { eventsChannel.send(SettingsEvent.Message("All data cleared successfully")) }
                 .onFailure { eventsChannel.send(SettingsEvent.Message(it.message.orEmpty())) }
             _state.value = _state.value.copy(isResetting = false)
+        }
+    }
+
+    fun addCategory(name: String) {
+        viewModelScope.launch {
+            val category = Category(id = 0, name = name.trim(), icon = "ic_custom")
+            runCatching { upsertCategoryUseCase(category) }
+                .onSuccess { eventsChannel.send(SettingsEvent.Message("Category added")) }
+                .onFailure { eventsChannel.send(SettingsEvent.Message(it.message.orEmpty())) }
         }
     }
 

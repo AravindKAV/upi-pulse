@@ -76,6 +76,13 @@ class ExpenseRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun upsertCategory(category: Category): Category =
+        withContext(ioDispatcher) {
+            val entity = category.toEntity()
+            categoryDao.insertAll(listOf(entity)) // Reuse insertAll or add upsert to Dao
+            category
+        }
+
     override suspend fun upsertAccount(account: Account): Account =
         withContext(ioDispatcher) {
             val id = accountDao.upsert(account.toEntity())

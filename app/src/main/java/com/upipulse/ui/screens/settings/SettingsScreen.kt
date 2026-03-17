@@ -23,6 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
@@ -82,6 +83,7 @@ fun SettingsScreen(
 ) {
     val state by viewModel.state.collectAsState()
     var showAccountDialog by remember { mutableStateOf(false) }
+    var showCategoryDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
 
@@ -199,6 +201,17 @@ fun SettingsScreen(
         }
 
         item {
+            SettingsSection(title = "Categories") {
+                SettingItem(
+                    title = "Custom Categories",
+                    subtitle = "Add more tags for your transactions",
+                    icon = Icons.Default.Category,
+                    onClick = { showCategoryDialog = true }
+                )
+            }
+        }
+
+        item {
             SettingsSection(title = "Data Management") {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -298,6 +311,60 @@ fun SettingsScreen(
             }
         )
     }
+
+    if (showCategoryDialog) {
+        CategoryDialog(
+            onDismiss = { showCategoryDialog = false },
+            onSave = { name ->
+                viewModel.addCategory(name)
+                showCategoryDialog = false
+            }
+        )
+    }
+}
+
+@Composable
+private fun CategoryDialog(
+    onDismiss: () -> Unit,
+    onSave: (String) -> Unit
+) {
+    var name by remember { mutableStateOf("") }
+    val canSave = name.isNotBlank()
+    
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(28.dp),
+        confirmButton = {
+            Button(
+                onClick = { onSave(name) }, 
+                enabled = canSave,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text("Add Category")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+        title = { 
+            Text(
+                "Add Category", 
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            ) 
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.padding(top = 8.dp)) {
+                OutlinedTextField(
+                    value = name, 
+                    onValueChange = { name = it }, 
+                    label = { Text("Category Name (e.g. Subscriptions)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+        }
+    )
 }
 
 @Composable
