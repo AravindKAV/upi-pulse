@@ -1,5 +1,12 @@
 package com.upipulse.ui.screens.settings
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +36,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
@@ -40,11 +46,18 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -62,6 +75,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -69,11 +83,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.upipulse.domain.model.AppTheme
+import com.upipulse.domain.model.CategoryType
 import com.upipulse.util.formatInr
 import kotlin.math.absoluteValue
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
     onMessage: (String) -> Unit,
@@ -82,10 +100,23 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
     var showAccountDialog by remember { mutableStateOf(false) }
     var showCategoryDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
+    var categoryDropdownExpanded by remember { mutableStateOf(false) }
+
+    val smsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        val granted = results.values.all { it }
+        if (granted) viewModel.toggleSms(true)
+        else {
+            viewModel.toggleSms(false)
+            onMessage("SMS permissions are required for this feature")
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -140,7 +171,15 @@ fun SettingsScreen(
                     subtitle = "Automatically parse UPI debit SMS alerts",
                     icon = Icons.Default.Sms,
                     checked = state.settings.smsDetectionEnabled,
-                    onCheckedChange = viewModel::toggleSms
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            val hasSms = ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED
+                            if (hasSms) viewModel.toggleSms(true)
+                            else smsLauncher.launch(arrayOf(Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_SMS))
+                        } else {
+                            viewModel.toggleSms(false)
+                        }
+                    }
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 0.5.dp, color = MaterialTheme.colorScheme.outlineVariant)
                 SettingToggle(
@@ -148,7 +187,20 @@ fun SettingsScreen(
                     subtitle = "Watch GPay, PhonePe, and Paytm notifications",
                     icon = Icons.Default.Notifications,
                     checked = state.settings.notificationDetectionEnabled,
-                    onCheckedChange = viewModel::toggleNotifications
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            val isListenerEnabled = NotificationManagerCompat.getEnabledListenerPackages(context).contains(context.packageName)
+                            if (isListenerEnabled) {
+                                viewModel.toggleNotifications(true)
+                            } else {
+                                viewModel.toggleNotifications(false) // Keep it off until granted
+                                onMessage("Please enable TrackIt in Notification Access settings")
+                                context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+                            }
+                        } else {
+                            viewModel.toggleNotifications(false)
+                        }
+                    }
                 )
             }
         }
@@ -201,13 +253,96 @@ fun SettingsScreen(
         }
 
         item {
-            SettingsSection(title = "Categories") {
-                SettingItem(
-                    title = "Custom Categories",
-                    subtitle = "Add more tags for your transactions",
-                    icon = Icons.Default.Category,
-                    onClick = { showCategoryDialog = true }
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Categories", 
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    TextButton(
+                        onClick = { showCategoryDialog = true },
+                        contentPadding = PaddingValues(horizontal = 12.dp)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Add Category")
+                    }
+                }
+                
+                ExposedDropdownMenuBox(
+                    expanded = categoryDropdownExpanded,
+                    onExpandedChange = { categoryDropdownExpanded = !categoryDropdownExpanded },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    OutlinedTextField(
+                        value = "Browse Existing Categories",
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        leadingIcon = { Icon(Icons.Default.Category, contentDescription = null) },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = categoryDropdownExpanded) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = categoryDropdownExpanded,
+                        onDismissRequest = { categoryDropdownExpanded = false }
+                    ) {
+                        if (state.categories.isEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("No custom categories added") },
+                                onClick = { categoryDropdownExpanded = false }
+                            )
+                        } else {
+                            // Filter categories to remove duplicates by name
+                            val uniqueCategories = state.categories.distinctBy { it.name }
+                            val debitCategories = uniqueCategories.filter { it.type == CategoryType.DEBIT || it.type == CategoryType.BOTH }
+                            val creditCategories = uniqueCategories.filter { it.type == CategoryType.CREDIT || it.type == CategoryType.BOTH }
+
+                            if (debitCategories.isNotEmpty()) {
+                                DropdownMenuItem(
+                                    text = { Text("DEBIT CATEGORIES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary) },
+                                    onClick = {},
+                                    enabled = false
+                                )
+                                debitCategories.forEach { category ->
+                                    DropdownMenuItem(
+                                        text = { 
+                                            Text(category.name, modifier = Modifier.padding(start = 8.dp))
+                                        },
+                                        onClick = { categoryDropdownExpanded = false }
+                                    )
+                                }
+                            }
+
+                            if (creditCategories.isNotEmpty()) {
+                                if (debitCategories.isNotEmpty()) HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                                DropdownMenuItem(
+                                    text = { Text("CREDIT CATEGORIES", style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = Color(0xFF10B981)) },
+                                    onClick = {},
+                                    enabled = false
+                                )
+                                creditCategories.forEach { category ->
+                                    DropdownMenuItem(
+                                        text = { 
+                                            Text(category.name, modifier = Modifier.padding(start = 8.dp))
+                                        },
+                                        onClick = { categoryDropdownExpanded = false }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -315,8 +450,8 @@ fun SettingsScreen(
     if (showCategoryDialog) {
         CategoryDialog(
             onDismiss = { showCategoryDialog = false },
-            onSave = { name ->
-                viewModel.addCategory(name)
+            onSave = { name, type ->
+                viewModel.addCategory(name, type)
                 showCategoryDialog = false
             }
         )
@@ -326,9 +461,10 @@ fun SettingsScreen(
 @Composable
 private fun CategoryDialog(
     onDismiss: () -> Unit,
-    onSave: (String) -> Unit
+    onSave: (String, CategoryType) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
+    var type by remember { mutableStateOf(CategoryType.BOTH) }
     val canSave = name.isNotBlank()
     
     AlertDialog(
@@ -336,7 +472,7 @@ private fun CategoryDialog(
         shape = RoundedCornerShape(28.dp),
         confirmButton = {
             Button(
-                onClick = { onSave(name) }, 
+                onClick = { onSave(name, type) }, 
                 enabled = canSave,
                 shape = RoundedCornerShape(12.dp)
             ) {
@@ -348,7 +484,7 @@ private fun CategoryDialog(
         },
         title = { 
             Text(
-                "Add Category", 
+                "Add Custom Category", 
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             ) 
@@ -362,6 +498,29 @@ private fun CategoryDialog(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
+                
+                Text("Show category in:", style = MaterialTheme.typography.labelMedium)
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = type == CategoryType.DEBIT,
+                        onClick = { type = CategoryType.DEBIT },
+                        label = { Text("Debit") }
+                    )
+                    FilterChip(
+                        selected = type == CategoryType.CREDIT,
+                        onClick = { type = CategoryType.CREDIT },
+                        label = { Text("Credit") }
+                    )
+                    FilterChip(
+                        selected = type == CategoryType.BOTH,
+                        onClick = { type = CategoryType.BOTH },
+                        label = { Text("Both") }
+                    )
+                }
             }
         }
     )

@@ -5,12 +5,15 @@ import androidx.lifecycle.viewModelScope
 import com.upipulse.domain.model.Account
 import com.upipulse.domain.model.AppTheme
 import com.upipulse.domain.model.Category
+import com.upipulse.domain.model.CategoryType
 import com.upipulse.domain.model.TrackingSettings
 import com.upipulse.domain.usecase.ObserveTrackingSettingsUseCase
 import com.upipulse.domain.usecase.ObserveAccountsUseCase
+import com.upipulse.domain.usecase.ObserveCategoriesUseCase
 import com.upipulse.domain.usecase.ResetSampleDataUseCase
 import com.upipulse.domain.usecase.UpsertAccountUseCase
 import com.upipulse.domain.usecase.DeleteAccountUseCase
+import com.upipulse.domain.usecase.DeleteCategoryUseCase
 import com.upipulse.domain.usecase.UpdateNotificationDetectionUseCase
 import com.upipulse.domain.usecase.UpdateSmsDetectionUseCase
 import com.upipulse.domain.usecase.UpdateThemeUseCase
@@ -33,6 +36,7 @@ sealed interface SettingsEvent {
 data class SettingsUiState(
     val settings: TrackingSettings = TrackingSettings(),
     val accounts: List<Account> = emptyList(),
+    val categories: List<Category> = emptyList(),
     val isResetting: Boolean = false
 )
 
@@ -40,6 +44,7 @@ data class SettingsUiState(
 class SettingsViewModel @Inject constructor(
     observeTrackingSettingsUseCase: ObserveTrackingSettingsUseCase,
     observeAccountsUseCase: ObserveAccountsUseCase,
+    observeCategoriesUseCase: ObserveCategoriesUseCase,
     private val updateSmsDetectionUseCase: UpdateSmsDetectionUseCase,
     private val updateNotificationDetectionUseCase: UpdateNotificationDetectionUseCase,
     private val resetSampleDataUseCase: ResetSampleDataUseCase,
@@ -47,6 +52,7 @@ class SettingsViewModel @Inject constructor(
     private val deleteAccountUseCase: DeleteAccountUseCase,
     private val updateThemeUseCase: UpdateThemeUseCase,
     private val upsertCategoryUseCase: UpsertCategoryUseCase,
+    private val deleteCategoryUseCase: DeleteCategoryUseCase,
     private val preferences: UserPreferencesDataSource
 ) : ViewModel() {
 
@@ -65,6 +71,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             observeAccountsUseCase().collectLatest { accounts ->
                 _state.value = _state.value.copy(accounts = accounts)
+            }
+        }
+        viewModelScope.launch {
+            observeCategoriesUseCase().collectLatest { categories ->
+                _state.value = _state.value.copy(categories = categories)
             }
         }
     }
@@ -97,11 +108,19 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun addCategory(name: String) {
+    fun addCategory(name: String, type: CategoryType) {
         viewModelScope.launch {
-            val category = Category(id = 0, name = name.trim(), icon = "ic_custom")
+            val category = Category(id = 0, name = name.trim(), icon = "ic_custom", type = type)
             runCatching { upsertCategoryUseCase(category) }
                 .onSuccess { eventsChannel.send(SettingsEvent.Message("Category added")) }
+                .onFailure { eventsChannel.send(SettingsEvent.Message(it.message.orEmpty())) }
+        }
+    }
+
+    fun deleteCategory(category: Category) {
+        viewModelScope.launch {
+            runCatching { deleteCategoryUseCase(category) }
+                .onSuccess { eventsChannel.send(SettingsEvent.Message("Category removed")) }
                 .onFailure { eventsChannel.send(SettingsEvent.Message(it.message.orEmpty())) }
         }
     }

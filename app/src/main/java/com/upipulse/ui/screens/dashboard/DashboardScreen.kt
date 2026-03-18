@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -366,9 +367,9 @@ private fun DashboardHeroCard(
                         )
                         Text(
                             formatInr(totalSpent), 
-                            style = MaterialTheme.typography.headlineLarge.copy(
+                            style = MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.Black,
-                                fontSize = 32.sp
+                                fontSize = 24.sp
                             ), 
                             color = Color.White
                         )

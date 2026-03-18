@@ -1,6 +1,7 @@
 package com.upipulse.data.local.db
 
 import androidx.room.TypeConverter
+import com.upipulse.domain.model.CategoryType
 import com.upipulse.domain.model.TransactionSource
 import java.time.Instant
 
@@ -16,4 +17,10 @@ class Converters {
 
     @TypeConverter
     fun toSource(value: String?): TransactionSource? = value?.let(TransactionSource::valueOf)
+
+    @TypeConverter
+    fun fromCategoryType(value: CategoryType?): String? = value?.name
+
+    @TypeConverter
+    fun toCategoryType(value: String?): CategoryType? = value?.let(CategoryType::valueOf)
 }

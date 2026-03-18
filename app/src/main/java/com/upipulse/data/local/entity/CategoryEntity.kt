@@ -1,11 +1,17 @@
 package com.upipulse.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.upipulse.domain.model.CategoryType
 
-@Entity(tableName = "categories")
+@Entity(
+    tableName = "categories",
+    indices = [Index(value = ["name"], unique = true)]
+)
 data class CategoryEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
-    val icon: String
+    val icon: String,
+    val type: CategoryType = CategoryType.BOTH
 )

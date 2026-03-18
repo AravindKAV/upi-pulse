@@ -4,6 +4,8 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.upipulse.domain.model.Account
+import com.upipulse.domain.model.Category
+import com.upipulse.domain.model.CategoryType
 import com.upipulse.domain.model.Transaction
 import com.upipulse.domain.model.TransactionSource
 import com.upipulse.domain.usecase.InsertTransactionUseCase
@@ -63,9 +65,9 @@ class TransactionFormViewModel @Inject constructor(
     private val _state = MutableStateFlow(TransactionFormState(isEdit = transactionId != null))
     val state: StateFlow<TransactionFormState> = _state.asStateFlow()
 
-    private val _allCategories = MutableStateFlow<List<String>>(emptyList())
-    private val _filteredCategories = MutableStateFlow<List<String>>(emptyList())
-    val categories: StateFlow<List<String>> = _filteredCategories.asStateFlow()
+    private val _allCategories = MutableStateFlow<List<Category>>(emptyList())
+    private val _filteredCategoryNames = MutableStateFlow<List<String>>(emptyList())
+    val categories: StateFlow<List<String>> = _filteredCategoryNames.asStateFlow()
 
     private val _accounts = MutableStateFlow<List<Account>>(emptyList())
     val accounts: StateFlow<List<Account>> = _accounts.asStateFlow()
@@ -76,8 +78,7 @@ class TransactionFormViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             observeCategoriesUseCase().collect { list ->
-                val distinct = list.map { it.name }.distinct()
-                _allCategories.value = distinct
+                _allCategories.value = list
                 updateFilteredCategories()
             }
         }
@@ -92,7 +93,8 @@ class TransactionFormViewModel @Inject constructor(
         transactionId?.let { id ->
             viewModelScope.launch {
                 observeTransactionUseCase(id).filterNotNull().first().also { transaction ->
-                    _state.value = _state.value.copy(
+                    val isCredit = transaction.amount > 0
+                    _state.update { it.copy(
                         amount = transaction.amount.absoluteValue.toString(),
                         merchant = transaction.merchant,
                         category = transaction.category,
@@ -102,9 +104,9 @@ class TransactionFormViewModel @Inject constructor(
                         accountId = transaction.account.id,
                         source = transaction.source,
                         isEdit = true,
-                        isCredit = transaction.amount > 0,
+                        isCredit = isCredit,
                         isTransfer = transaction.category == "Transfer"
-                    )
+                    ) }
                     updateFilteredCategories()
                 }
             }
@@ -113,16 +115,19 @@ class TransactionFormViewModel @Inject constructor(
 
     private fun updateFilteredCategories() {
         val s = _state.value
-        val creditNames = listOf("Salary", "Refunds", "Cashback", "Interest", "Gift Received", "Rental Income", "Others")
         val filtered = if (s.isTransfer) {
             listOf("Transfer")
-        } else if (s.isCredit) {
-            _allCategories.value.filter { it in creditNames }
         } else {
-            _allCategories.value.filter { it !in creditNames && it != "Transfer" || it == "Others" }
+            val targetType = if (s.isCredit) CategoryType.CREDIT else CategoryType.DEBIT
+            _allCategories.value
+                .filter { it.type == targetType || it.type == CategoryType.BOTH }
+                .map { it.name }
+                .distinct()
         }
-        _filteredCategories.value = filtered
-        if (s.category !in filtered && filtered.isNotEmpty()) {
+        _filteredCategoryNames.value = filtered
+        
+        // When updating filtered categories, ensure the current selection is valid or default it
+        if (_state.value.category !in filtered && filtered.isNotEmpty()) {
             _state.update { it.copy(category = filtered.first()) }
         }
     }
@@ -161,8 +166,11 @@ class TransactionFormViewModel @Inject constructor(
 
     fun updateType(isCredit: Boolean, isTransfer: Boolean) {
         _state.update { it.copy(isCredit = isCredit, isTransfer = isTransfer) }
-        if (isTransfer) _state.update { it.copy(category = "Transfer") }
         updateFilteredCategories()
+        
+        if (isTransfer) {
+            _state.update { it.copy(category = "Transfer") }
+        }
     }
 
     fun save() {

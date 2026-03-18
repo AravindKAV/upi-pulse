@@ -16,7 +16,7 @@ import com.upipulse.data.local.entity.TransactionEntity
         CategoryEntity::class,
         AccountEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

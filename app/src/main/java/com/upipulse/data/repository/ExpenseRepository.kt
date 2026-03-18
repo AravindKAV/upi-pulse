@@ -14,6 +14,7 @@ interface ExpenseRepository {
     fun observeAccounts(): Flow<List<Account>>
     suspend fun ensureCategories(categories: List<Category>)
     suspend fun upsertCategory(category: Category): Category
+    suspend fun deleteCategory(category: Category)
     suspend fun upsertAccount(account: Account): Account
     suspend fun upsertAccounts(accounts: List<Account>): List<Account>
     suspend fun deleteAccount(account: Account)

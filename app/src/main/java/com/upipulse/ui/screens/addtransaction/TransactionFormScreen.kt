@@ -216,28 +216,26 @@ fun TransactionFormScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Category & Payment Method
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Box(modifier = Modifier.weight(1f)) {
-                            DropdownField(
-                                label = "Category",
-                                value = state.category,
-                                options = categories,
-                                icon = Icons.Default.Category,
-                                onValueSelected = viewModel::updateCategory,
-                                enabled = !state.isTransfer
-                            )
-                        }
-                        Box(modifier = Modifier.weight(1f)) {
-                            DropdownField(
-                                label = "Method",
-                                value = state.paymentMethod,
-                                options = paymentMethods,
-                                icon = Icons.Default.Payments,
-                                onValueSelected = viewModel::updatePaymentMethod
-                            )
-                        }
-                    }
+                    // Category
+                    DropdownField(
+                        label = "Category",
+                        value = state.category,
+                        options = categories,
+                        icon = Icons.Default.Category,
+                        onValueSelected = viewModel::updateCategory,
+                        enabled = !state.isTransfer
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Method
+                    DropdownField(
+                        label = "Payment Method",
+                        value = state.paymentMethod,
+                        options = paymentMethods,
+                        icon = Icons.Default.Payments,
+                        onValueSelected = viewModel::updatePaymentMethod
+                    )
 
                     Spacer(modifier = Modifier.height(16.dp))
 

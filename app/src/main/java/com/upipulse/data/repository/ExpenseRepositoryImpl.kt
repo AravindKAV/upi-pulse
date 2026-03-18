@@ -13,6 +13,7 @@ import com.upipulse.domain.model.AccountSpending
 import com.upipulse.domain.model.AccountSummary
 import com.upipulse.domain.model.Category
 import com.upipulse.domain.model.CategoryBreakdown
+import com.upipulse.domain.model.CategoryType
 import com.upipulse.domain.model.DashboardAnalytics
 import com.upipulse.domain.model.Transaction
 import com.upipulse.domain.model.WeeklySpendingPoint
@@ -79,9 +80,15 @@ class ExpenseRepositoryImpl @Inject constructor(
     override suspend fun upsertCategory(category: Category): Category =
         withContext(ioDispatcher) {
             val entity = category.toEntity()
-            categoryDao.insertAll(listOf(entity)) // Reuse insertAll or add upsert to Dao
+            categoryDao.insertAll(listOf(entity))
             category
         }
+
+    override suspend fun deleteCategory(category: Category) {
+        withContext(ioDispatcher) {
+            categoryDao.delete(category.toEntity())
+        }
+    }
 
     override suspend fun upsertAccount(account: Account): Account =
         withContext(ioDispatcher) {
@@ -239,9 +246,9 @@ class ExpenseRepositoryImpl @Inject constructor(
         accountId = account.id
     )
 
-    private fun CategoryEntity.toDomain(): Category = Category(id = id, name = name, icon = icon)
+    private fun CategoryEntity.toDomain(): Category = Category(id = id, name = name, icon = icon, type = type)
 
-    private fun Category.toEntity(): CategoryEntity = CategoryEntity(id = id, name = name, icon = icon)
+    private fun Category.toEntity(): CategoryEntity = CategoryEntity(id = id, name = name, icon = icon, type = type)
 
     private fun AccountEntity.toDomain(): Account = Account(
         id = id,

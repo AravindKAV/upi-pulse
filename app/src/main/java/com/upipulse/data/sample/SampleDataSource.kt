@@ -5,6 +5,7 @@ import com.upipulse.domain.model.AccountSpending
 import com.upipulse.domain.model.AccountSummary
 import com.upipulse.domain.model.Category
 import com.upipulse.domain.model.CategoryBreakdown
+import com.upipulse.domain.model.CategoryType
 import com.upipulse.domain.model.DashboardAnalytics
 import com.upipulse.domain.model.Transaction
 import com.upipulse.domain.model.TransactionSource
@@ -16,28 +17,28 @@ import java.time.ZoneId
 object SampleDataSource {
     fun categories(): List<Category> = listOf(
         // Debit Categories
-        Category(id = 0, name = "Food & Dining", icon = "ic_food"),
-        Category(id = 0, name = "Transport", icon = "ic_transport"),
-        Category(id = 0, name = "Shopping", icon = "ic_shopping"),
-        Category(id = 0, name = "Bills & Utilities", icon = "ic_bills"),
-        Category(id = 0, name = "Entertainment", icon = "ic_entertainment"),
-        Category(id = 0, name = "Groceries", icon = "ic_groceries"),
-        Category(id = 0, name = "Health & Wellness", icon = "ic_health"),
-        Category(id = 0, name = "Education", icon = "ic_education"),
-        Category(id = 0, name = "Investment", icon = "ic_investment"),
-        Category(id = 0, name = "Travel", icon = "ic_travel"),
-        Category(id = 0, name = "Personal Care", icon = "ic_personal"),
-        Category(id = 0, name = "Gift & Donations", icon = "ic_gift"),
-        Category(id = 0, name = "Others", icon = "ic_others"),
-        Category(id = 0, name = "Transfer", icon = "ic_transfer"),
+        Category(id = 0, name = "Food & Dining", icon = "ic_food", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Transport", icon = "ic_transport", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Shopping", icon = "ic_shopping", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Bills & Utilities", icon = "ic_bills", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Entertainment", icon = "ic_entertainment", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Groceries", icon = "ic_groceries", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Health & Wellness", icon = "ic_health", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Education", icon = "ic_education", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Investment", icon = "ic_investment", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Travel", icon = "ic_travel", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Personal Care", icon = "ic_personal", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Gift & Donations", icon = "ic_gift", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Others", icon = "ic_others", type = CategoryType.DEBIT),
+        Category(id = 0, name = "Transfer", icon = "ic_transfer", type = CategoryType.DEBIT),
         
         // Credit Categories
-        Category(id = 0, name = "Salary", icon = "ic_salary"),
-        Category(id = 0, name = "Refunds", icon = "ic_refunds"),
-        Category(id = 0, name = "Cashback", icon = "ic_cashback"),
-        Category(id = 0, name = "Interest", icon = "ic_interest"),
-        Category(id = 0, name = "Gift Received", icon = "ic_gift_in"),
-        Category(id = 0, name = "Rental Income", icon = "ic_rent")
+        Category(id = 0, name = "Salary", icon = "ic_salary", type = CategoryType.CREDIT),
+        Category(id = 0, name = "Refunds", icon = "ic_refunds", type = CategoryType.CREDIT),
+        Category(id = 0, name = "Cashback", icon = "ic_cashback", type = CategoryType.CREDIT),
+        Category(id = 0, name = "Interest", icon = "ic_interest", type = CategoryType.CREDIT),
+        Category(id = 0, name = "Gift Received", icon = "ic_gift_in", type = CategoryType.CREDIT),
+        Category(id = 0, name = "Rental Income", icon = "ic_rent", type = CategoryType.CREDIT)
     )
 
     fun accounts(): List<Account> = listOf(
